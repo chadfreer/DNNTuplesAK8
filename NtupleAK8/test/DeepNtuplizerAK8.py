@@ -97,13 +97,13 @@ bTagDiscriminators = [
 	'pfBoostedDoubleSecondaryVertexAK8BJetTags'
 ]
 
-jetCorrectionsAK8 = ('AK8PFchs', ['L1FastJet', 'L2Relative', 'L3Absolute'], 'None')
+jetCorrectionsAK8 = ('AK4PFchs', ['L1FastJet', 'L2Relative', 'L3Absolute'], 'None')
 
 from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
 updateJetCollection(
         process,
         labelName = "DeepFlavour",
-        jetSource = cms.InputTag('slimmedJetsAK8'),
+        jetSource = cms.InputTag('slimmedJets'),
         jetCorrections = jetCorrectionsAK8,
         pfCandidates = cms.InputTag('packedPFCandidates'),
         pvSource = cms.InputTag("offlineSlimmedPrimaryVertices"),
@@ -181,7 +181,7 @@ process.looseIVFcandidateVertexArbitrator.fitterSigmacut = 20
 process.load("DeepNTuples.NtupleAK8.DeepNtuplizerAK8_cfi")
 process.deepntuplizer.jets = cms.InputTag('selectedUpdatedPatJetsDeepFlavour')
 process.deepntuplizer.bDiscriminators = bTagDiscriminators 
-process.deepntuplizer.bDiscriminators.append('pfCombinedMVAV2BJetTags')
+#process.deepntuplizer.bDiscriminators.append('pfCombinedMVAV2BJetTags')
 process.deepntuplizer.LooseSVs = cms.InputTag("looseIVFinclusiveCandidateSecondaryVertices")
 
 process.deepntuplizer.fjKeepFlavors = cms.untracked.vuint32(options.fjKeepFlavors)

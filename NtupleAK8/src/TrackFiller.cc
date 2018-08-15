@@ -29,6 +29,12 @@ void TrackFiller::book() {
   data.add<int>("n_tracks", 0);
   data.add<float>("ntracks", 0);
 
+  // adding displaced jet info
+  data.add<float>("alpha", -1);
+  data.add<float>("alphaMax", -1);
+  data.add<float>("alphaSV", -1);
+  data.add<float>("alphaSVMax", -1);
+
   // basic kinematics
   data.addMulti<float>("track_ptrel");
   data.addMulti<float>("track_erel");
@@ -184,10 +190,13 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
     data.fillMulti<float>("trackBTag_Sip3dVal", trkinfo.getTrackSip3dVal());
     data.fillMulti<float>("trackBTag_Sip3dSig", trkinfo.getTrackSip3dSig());
     data.fillMulti<float>("trackBTag_JetDistVal", trkinfo.getTrackJetDistVal());
-//    data.fillMulti<float>("trackBTag_JetDistSig", trkinfo.getTrackJetDistSig());
-
+    // data.fillMulti<float>("trackBTag_JetDistSig", trkinfo.getTrackJetDistSig());    
+    
   }
 
+  for (const auto *pv : vertices ){
+    std::cout << "[YACINE] p vertex " << pv.pt() << std::endl;
+  }
 
   return true;
 }

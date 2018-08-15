@@ -50,4 +50,4 @@ private:
 
 } /* namespace deepntuples */
 
-#endif /* NTUPLEAK8_INTERFACE_FATJETINFOFILLER_H_ */
+#endif /* NTUPLEAK7_INTERFACE_FATJETINFOFILLER_H_ */

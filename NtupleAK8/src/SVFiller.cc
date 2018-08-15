@@ -64,8 +64,7 @@ bool SVFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_hel
   std::sort(jetSVs.begin(), jetSVs.end(), [&](const reco::VertexCompositePtrCandidate *sv1, const reco::VertexCompositePtrCandidate *sv2){
     return vertexDxy(*sv1, pv).significance() > vertexDxy(*sv2, pv).significance();
   });
-
-
+  
   data.fill<int>("n_sv", jetSVs.size());
   data.fill<float>("nsv", jetSVs.size());
 
