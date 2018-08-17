@@ -109,12 +109,38 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
       trackInfoMap[pfcand].buildTrackInfo(builder_, *pfcand, jet, vertices->at(0));
     }
   }
-
+  
   // sort by Sip2d significance
   std::sort(chargedPFCands.begin(), chargedPFCands.end(), [&](const pat::PackedCandidate *p1, const pat::PackedCandidate *p2){
     return trackInfoMap.at(p1).getTrackSip2dSig() > trackInfoMap.at(p2).getTrackSip2dSig();
   });
-
+  
+  // calculating the alpha for pv and sv
+  //float sumJetPt  = 0;
+  //float alpha     = 0;
+  
+  const auto &lead_pv = vertices->at(0);
+  //bool in_lead_pv = false; 
+  // const auto &lead_sv = SVs->at(0);
+  // std::cout << " Jet Radius : " << jetR_ << std::endl;
+  // these are the sums for this specific vertex
+  for (const auto *tkr : chargedPFCands){
+    if((tkr->pt() < 1.0)) continue; //apply a cut on the track pt 
+    //float lead_pv_dz = std::abs(tkr->trackRef()->dz(lead_pv->position()));
+    int vtx_i = 0 ;
+    for (const auto &iv : *vertices){
+      if( iv.isFake() || iv.ndof() < 4 ) continue;
+      bool is_lead_pv  = (iv.position() - lead_pv.position()).r() < 0.02;
+      std::cout << " -- " << vtx_i << " : "<< is_lead_pv << " -- trak dz(pv)" << tkr->dz(iv.position()) << std::endl;
+      vtx_i ++ ;
+    }
+  }
+  //
+  //for (const auto &sv : *SVs){
+  //
+  //k
+  
+  
   data.fill<int>("n_tracks", chargedPFCands.size());
   data.fill<float>("ntracks", chargedPFCands.size());
 
@@ -193,11 +219,9 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
     // data.fillMulti<float>("trackBTag_JetDistSig", trkinfo.getTrackJetDistSig());    
     
   }
-
-  for (const auto *pv : vertices ){
-    std::cout << "[YACINE] p vertex " << pv.pt() << std::endl;
-  }
-
+  //const auto &pv = vertices->at(0);
+  //std::cout << "primary vertex : " << pv.x() << std::endl;
+  
   return true;
 }
 
