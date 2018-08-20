@@ -30,10 +30,26 @@ void TrackFiller::book() {
   data.add<float>("ntracks", 0);
 
   // adding displaced jet info
-  data.add<float>("alpha", -1);
-  data.add<float>("alphaMax", -1);
-  data.add<float>("alphaSV", -1);
-  data.add<float>("alphaSVMax", -1);
+  data.add<float>("alpha_loose", -1);
+  data.add<float>("alphaStar_loose", -1);
+  data.add<float>("alpha_ratio_loose", -1);
+
+  data.add<float>("alpha_tight", -1);
+  data.add<float>("alphaStar_tight", -1);
+  data.add<float>("alpha_ratio_tight", -1);
+
+  data.add<float>("alpha_used", -1);
+  data.add<float>("alphaStar_used", -1);
+  data.add<float>("alpha_ratio_used", -1);
+
+  data.add<float>("alpha_NoVert", -1);
+  data.add<float>("alphaStar_NoVert", -1);
+  data.add<float>("alpha_ratio_NoVert", -1);
+
+  //data.add<float>("alpha", -1);
+  //data.add<float>("alphaMax", -1);
+  //data.add<float>("alphaSV", -1);
+  //data.add<float>("alphaSVMax", -1);
 
   // basic kinematics
   data.addMulti<float>("track_ptrel");
@@ -119,27 +135,121 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
   //float sumJetPt  = 0;
   //float alpha     = 0;
   
-  const auto &lead_pv = vertices->at(0);
-  //bool in_lead_pv = false; 
-  // const auto &lead_sv = SVs->at(0);
-  // std::cout << " Jet Radius : " << jetR_ << std::endl;
-  // these are the sums for this specific vertex
-  for (const auto *tkr : chargedPFCands){
-    if((tkr->pt() < 1.0)) continue; //apply a cut on the track pt 
-    //float lead_pv_dz = std::abs(tkr->trackRef()->dz(lead_pv->position()));
-    int vtx_i = 0 ;
-    for (const auto &iv : *vertices){
-      if( iv.isFake() || iv.ndof() < 4 ) continue;
-      bool is_lead_pv  = (iv.position() - lead_pv.position()).r() < 0.02;
-      std::cout << " -- " << vtx_i << " : "<< is_lead_pv << " -- trak dz(pv)" << tkr->dz(iv.position()) << std::endl;
-      vtx_i ++ ;
-    }
+  //const auto &lead_pv = vertices->at(0);
+  ////bool in_lead_pv = false; 
+  //// const auto &lead_sv = SVs->at(0);
+  //// std::cout << " Jet Radius : " << jetR_ << std::endl;
+  //// these are the sums for this specific vertex
+  //for (const auto *tkr : chargedPFCands){
+  //  if((tkr->pt() < 1.0)) continue; //apply a cut on the track pt 
+  //  //float lead_pv_dz = std::abs(tkr->trackRef()->dz(lead_pv->position()));
+  //  int vtx_i = 0 ;
+  //  for (const auto &iv : *vertices){
+  //    if( iv.isFake() || iv.ndof() < 4 ) continue;
+  //    bool is_lead_pv  = (iv.position() - lead_pv.position()).r() < 0.02;
+  //    std::cout << " -- " << vtx_i << " : "<< is_lead_pv << " -- trak dz(pv)" << tkr->dz(iv.position()) << std::endl;
+  //    vtx_i ++ ;
+  //  }
+ //}
+
+   
+  //***********************************START alpha variables for vertices***********************************
+
+  float alpha_den = 0;
+  float alpha_num_loose = 0;
+  float alphaStar_num_loose = 0;
+  float alpha_num_tight = 0;
+  float alphaStar_num_tight = 0;
+  float alpha_num_used = 0;
+  float alphaStar_num_used = 0;
+  float alpha_num_NoVert = 0;
+  float alphaStar_num_NoVert = 0;
+  float alphaStar_num_Max_loose = 0;
+  float alphaStar_num_Max_tight = 0;
+  float alphaStar_num_Max_used = 0;
+  float alphaStar_num_Max_NoVert = 0;
+  float alpha_loose = 0;
+  float alpha_tight = 0;
+  float alpha_used = 0;
+  float alpha_NoVert = 0;
+  int sizeV = vertices->size();
+
+  for (int vID =0 ; vID < sizeV ; vID++){
+      alpha_num_loose = 0;
+      alphaStar_num_loose = 0;
+      alpha_num_tight = 0;
+      alphaStar_num_tight = 0;
+      alpha_num_used = 0;
+      alphaStar_num_used = 0;
+      alpha_num_NoVert = 0;
+      alphaStar_num_NoVert = 0;
+      alpha_den = 0;
+      for (const auto *cpf : chargedPFCands){
+          if (cpf->pt() < 1) continue ;
+          alpha_den += cpf->pt();
+          if (cpf->fromPV(vID) >= 1){
+             if (vID == 0) alpha_num_loose += cpf->pt();
+             if (vID != 0) alphaStar_num_loose += cpf->pt();
+          }if (cpf->fromPV(vID) >= 2){
+             if (vID == 0) alpha_num_tight += cpf->pt();
+             if (vID != 0) alphaStar_num_tight += cpf->pt();
+          }if (cpf->fromPV(vID) >= 3){
+             if (vID == 0) alpha_num_used += cpf->pt();
+             if (vID != 0) alphaStar_num_used += cpf->pt();
+          }if (cpf->fromPV(vID) == 0){
+             if (vID == 0) alpha_num_NoVert += cpf->pt();
+             if (vID != 0) alphaStar_num_NoVert += cpf->pt();
+          }
+     }
+     if (alphaStar_num_loose >= alphaStar_num_Max_loose) alphaStar_num_Max_loose = alphaStar_num_loose;
+     if (alphaStar_num_tight >= alphaStar_num_Max_tight) alphaStar_num_Max_tight = alphaStar_num_tight;
+     if (alphaStar_num_used >= alphaStar_num_Max_used) alphaStar_num_Max_used = alphaStar_num_used;
+     if (alphaStar_num_NoVert >= alphaStar_num_Max_NoVert) alphaStar_num_Max_NoVert = alphaStar_num_NoVert;  
+     if (alpha_den == 0) alpha_den = -1;
+     if (vID == 0) {
+        alpha_loose = alpha_num_loose / alpha_den;
+        alpha_tight = alpha_num_tight / alpha_den;
+        alpha_used = alpha_num_used / alpha_den;
+        alpha_NoVert = alpha_num_NoVert / alpha_den;
+     }
   }
+  float alphaStar_loose = alphaStar_num_Max_loose / alpha_den;
+  float alphaStar_tight = alphaStar_num_Max_tight / alpha_den;
+  float alphaStar_used = alphaStar_num_Max_used / alpha_den;
+  float alphaStar_NoVert = alphaStar_num_Max_NoVert / alpha_den;
+
+  float alpha_ratio_loose = alphaStar_loose / alpha_loose;
+  if (alpha_loose == 0 ) alpha_ratio_loose = 0;
+  float alpha_ratio_tight = alphaStar_tight / alpha_tight;
+  if (alpha_tight == 0 ) alpha_ratio_tight = 0;
+  float alpha_ratio_used = alphaStar_used / alpha_used;
+  if (alpha_used == 0 ) alpha_ratio_used = 0;
+  float alpha_ratio_NoVert = alphaStar_NoVert / alpha_NoVert;
+  if (alpha_NoVert == 0 ) alpha_ratio_NoVert = 0;
+
+  std::cout << "alpha:    " << alpha_tight << "      alphaStar:    " << alphaStar_tight << "      alpha_ratio:     " << alpha_ratio_tight << std::endl;
+  //***********************************END alpha variables for vertices***********************************
+
   //
   //for (const auto &sv : *SVs){
   //
   //k
-  
+ 
+  data.fill<float>("alpha_loose", alpha_loose);
+  data.fill<float>("alphaStar_loose", alphaStar_loose);
+  data.fill<float>("alpha_ratio_loose", alpha_ratio_loose);
+
+  data.fill<float>("alpha_tight", alpha_tight);
+  data.fill<float>("alphaStar_tight", alphaStar_tight);
+  data.fill<float>("alpha_ratio_tight", alpha_ratio_tight);
+
+  data.fill<float>("alpha_used", alpha_used);
+  data.fill<float>("alphaStar_used", alphaStar_used);
+  data.fill<float>("alpha_ratio_used", alpha_ratio_used);
+
+  data.fill<float>("alpha_NoVert", alpha_NoVert);
+  data.fill<float>("alphaStar_NoVert", alphaStar_NoVert);
+  data.fill<float>("alpha_ratio_NoVert", alpha_ratio_NoVert); 
   
   data.fill<int>("n_tracks", chargedPFCands.size());
   data.fill<float>("ntracks", chargedPFCands.size());
