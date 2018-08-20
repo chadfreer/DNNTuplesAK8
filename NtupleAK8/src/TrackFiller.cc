@@ -46,6 +46,12 @@ void TrackFiller::book() {
   data.add<float>("alphaStar_NoVert", -1);
   data.add<float>("alpha_ratio_NoVert", -1);
 
+  data.add<float>("JetDeltaR", -1);
+  data.add<float>("Jet2DIPSig", -1);
+  data.add<float>("Jet3DIPSig", -1);
+
+  data.add<float>("SV_alpha_Max", -1);
+
   //data.add<float>("alpha", -1);
   //data.add<float>("alphaMax", -1);
   //data.add<float>("alphaSV", -1);
@@ -227,12 +233,45 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
   float alpha_ratio_NoVert = alphaStar_NoVert / alpha_NoVert;
   if (alpha_NoVert == 0 ) alpha_ratio_NoVert = 0;
 
-  std::cout << "alpha:    " << alpha_tight << "      alphaStar:    " << alphaStar_tight << "      alpha_ratio:     " << alpha_ratio_tight << std::endl;
+  //std::cout << "alpha:    " << alpha_tight << "      alphaStar:    " << alphaStar_tight << "      alpha_ratio:     " << alpha_ratio_tight << std::endl;
   //***********************************END alpha variables for vertices***********************************
+  float den = 0;
+  float JetDeltaR_num = 0;
+  float IPSig2D_num = 0;
+  float IPSig3D_num = 0;
+   
+  for (const auto *cpf : chargedPFCands){
+      if (cpf->pt() < 1) continue ;
+      den += cpf->pt();
+      const auto &trkinfo = trackInfoMap.at(cpf);
+      JetDeltaR_num += trkinfo.getTrackDeltaR()  * cpf->pt();
+      //2dIPSig
+      IPSig2D_num += trkinfo.getTrackSip2dVal() / trkinfo.getTrackSip2dSig();
+      //3DIPSig
+      IPSig2D_num += trkinfo.getTrackSip3dVal() / trkinfo.getTrackSip3dSig();
+  }
 
-  //
-  //for (const auto &sv : *SVs){
-  //
+  float JetDeltaR = JetDeltaR_num / den;
+  int denom = chargedPFCands.size();
+  float Jet2DIPSig = IPSig2D_num / denom;
+  float Jet3DIPSig = IPSig3D_num / denom;
+
+  float SV_alpha_num = 0; 
+  float SV_alpha_Max = 0;
+
+
+  for (const auto &sv : *SVs){
+      SV_alpha_num = 0;
+      size_t SV_Size = sv.numberOfDaughters();
+      for (size_t Did = 0 ; Did < SV_Size ; Did++){
+          float PT = sv.daughter(Did)->pt();
+          if (PT < 1) continue;
+          SV_alpha_num += PT;
+          //std::cout << PT << std::endl;
+      }   
+      if (SV_alpha_num > SV_alpha_Max) SV_alpha_Max = SV_alpha_num;
+  }
+  SV_alpha_Max = SV_alpha_Max / den;
   //k
  
   data.fill<float>("alpha_loose", alpha_loose);
@@ -251,6 +290,12 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
   data.fill<float>("alphaStar_NoVert", alphaStar_NoVert);
   data.fill<float>("alpha_ratio_NoVert", alpha_ratio_NoVert); 
   
+  data.fill<float>("JetDeltaR", JetDeltaR);
+  data.fill<float>("Jet2DIPSig", Jet2DIPSig);
+  data.fill<float>("Jet3DIPSig", Jet3DIPSig);
+
+  data.fill<float>("SV_alpha_Max", SV_alpha_Max);
+
   data.fill<int>("n_tracks", chargedPFCands.size());
   data.fill<float>("ntracks", chargedPFCands.size());
 
