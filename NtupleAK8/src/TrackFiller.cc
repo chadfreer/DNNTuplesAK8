@@ -5,6 +5,10 @@
  *      Author: hqu
  */
 
+#include "TrackingTools/IPTools/interface/IPTools.h"
+#include "DataFormats/GeometryCommonDetAlgo/interface/Measurement1D.h"
+#include "DeepNTuples/NtupleAK8/interface/SVFiller.h"
+
 #include <unordered_map>
 #include "TrackingTools/Records/interface/TransientTrackRecord.h"
 
@@ -47,11 +51,13 @@ void TrackFiller::book() {
   data.add<float>("alpha_ratio_NoVert", -1);
 
   data.add<float>("JetDeltaR", -1);
+  data.add<float>("Jet2DIPSigMedian", -1);
+  data.add<float>("Jet3DIPSigMedian", -1);
   data.add<float>("Jet2DIPSig", -1);
   data.add<float>("Jet3DIPSig", -1);
 
   data.add<float>("SV_alpha_Max", -1);
-
+  data.add<float>("SV_ThetaMedian", -1);
   //data.add<float>("alpha", -1);
   //data.add<float>("alphaMax", -1);
   //data.add<float>("alphaSV", -1);
@@ -118,6 +124,28 @@ void TrackFiller::book() {
 //  data.addMulti<float>("trackBTag_JetDistSig"); // always gives 0
 
 
+}
+
+float CalcMedian(std::vector<float> vec)
+{
+  size_t size = vec.size();
+  if (size == 0){
+    return 0;  // Undefined, really.
+  }else{
+    //std::sort(vec.begin(), vec.end());
+    if (size % 2 == 0){
+      return (vec[size / 2 - 1] + vec[size / 2]) / 2;
+    }else {
+      return vec[size / 2];
+    }
+  }
+}
+
+Measurement1D TrackFiller::vertexDxy(const reco::VertexCompositePtrCandidate &svcand, const reco::Vertex &pv)  {
+    VertexDistanceXY dist;
+    reco::Vertex::CovarianceMatrix csv; svcand.fillVertexCovariance(csv);
+    reco::Vertex svtx(svcand.vertex(), csv);
+    return dist.distance(svtx, pv);
 }
 
 bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_helper) {
@@ -233,46 +261,85 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
   float alpha_ratio_NoVert = alphaStar_NoVert / alpha_NoVert;
   if (alpha_NoVert == 0 ) alpha_ratio_NoVert = 0;
 
-  //std::cout << "alpha:    " << alpha_tight << "      alphaStar:    " << alphaStar_tight << "      alpha_ratio:     " << alpha_ratio_tight << std::endl;
   //***********************************END alpha variables for vertices***********************************
   float den = 0;
   float JetDeltaR_num = 0;
   float IPSig2D_num = 0;
   float IPSig3D_num = 0;
-   
+  std::vector<float> IPSig2D_List ;
+  std::vector<float> IPSig3D_List ; 
   for (const auto *cpf : chargedPFCands){
       if (cpf->pt() < 1) continue ;
       den += cpf->pt();
       const auto &trkinfo = trackInfoMap.at(cpf);
       JetDeltaR_num += trkinfo.getTrackDeltaR()  * cpf->pt();
       //2dIPSig
+      //if ( trkinfo.getTrackSip2dVal() / trkinfo.getTrackSip2dSig() != trkinfo.getTrackSip2dVal() / trkinfo.getTrackSip2dSig()) || trkinfo.getTrackSip2dVal() / trkinfo.getTrackSip2dSig() == abs(inf) ) continue;
+      if ( isnan(trkinfo.getTrackSip2dVal() / trkinfo.getTrackSip2dSig()) == 1 || isinf(trkinfo.getTrackSip2dVal() / trkinfo.getTrackSip2dSig()) == 1) continue; // {
       IPSig2D_num += trkinfo.getTrackSip2dVal() / trkinfo.getTrackSip2dSig();
+      IPSig2D_List.push_back(IPSig2D_num);
+      //}
       //3DIPSig
-      IPSig2D_num += trkinfo.getTrackSip3dVal() / trkinfo.getTrackSip3dSig();
+      if ( isnan(trkinfo.getTrackSip3dVal() / trkinfo.getTrackSip3dSig()) == 0 || isinf(trkinfo.getTrackSip3dVal() / trkinfo.getTrackSip3dSig()) == 0) {
+      IPSig3D_num += trkinfo.getTrackSip3dVal() / trkinfo.getTrackSip3dSig();
+      IPSig3D_List.push_back(IPSig3D_num);
+      }
   }
-
+  //Median Variables
+  std::sort ( IPSig2D_List.begin(), IPSig2D_List.end() );
+  std::sort ( IPSig3D_List.begin(), IPSig3D_List.end() );
+  float Jet2DIPSigMedian = CalcMedian(IPSig2D_List);
+  float Jet3DIPSigMedian = CalcMedian(IPSig3D_List);
+  //Mean Variables
   float JetDeltaR = JetDeltaR_num / den;
   int denom = chargedPFCands.size();
   float Jet2DIPSig = IPSig2D_num / denom;
   float Jet3DIPSig = IPSig3D_num / denom;
 
+
+  //Now Secondary Vertex stuff
   float SV_alpha_num = 0; 
   float SV_alpha_Max = 0;
+  int counting = 0;
 
+  const auto &lead_pv = vertices->at(0); 
+  float dot = 0;
+  float lenSq1 = 0;
+  float lenSq2 = 0;
+  std::vector<float> angle;
 
   for (const auto &sv : *SVs){
       SV_alpha_num = 0;
+      counting += 1;   
       size_t SV_Size = sv.numberOfDaughters();
       for (size_t Did = 0 ; Did < SV_Size ; Did++){
           float PT = sv.daughter(Did)->pt();
+          //std::cout << "Index:  " << Did << "   PT:   "  << PT <<  "X:   " << sv.position().x() << "   track X:    " << sv.daughter(Did)->vx() <<  "   Y:   " << sv.position().y() <<  "   track Y:    " << sv.daughter(Did)->vy() <<  "   Z:   "  << sv.position().z() << "   track Z:    " << sv.daughter(Did)->vz() <<  std::endl;
+          double delr = reco::deltaR(sv.daughter(Did)->p4(), sv);
           if (PT < 1) continue;
+          if (delr > 0.8) continue;
           SV_alpha_num += PT;
-          //std::cout << PT << std::endl;
-      }   
+
+         //Theta Values now
+         dot = ( ( sv.position().x() - lead_pv.x() ) * sv.daughter(Did)->p4().px() ) + ( ( sv.position().y() - lead_pv.y() ) * sv.daughter(Did)->p4().py() ) + ( ( sv.position().z() - lead_pv.z() ) * sv.daughter(Did)->p4().pz() ) ;
+         lenSq1 = ( sv.position().x() - lead_pv.x() ) * ( sv.position().x() - lead_pv.x() ) + ( sv.position().y() - lead_pv.y() ) * ( sv.position().y() - lead_pv.y() ) + ( sv.position().z() - lead_pv.z() ) * ( sv.position().z() - lead_pv.z() ) ;  
+         lenSq2 = sv.daughter(Did)->p4().px() * sv.daughter(Did)->p4().px() + sv.daughter(Did)->p4().py() * sv.daughter(Did)->p4().py() + sv.daughter(Did)->p4().pz() * sv.daughter(Did)->p4().pz() ;
+         float Cosangle = acos(dot/sqrt(lenSq1*lenSq2)) ; 
+         angle.push_back(Cosangle);
+      }
       if (SV_alpha_num > SV_alpha_Max) SV_alpha_Max = SV_alpha_num;
   }
+
+  for  (unsigned int j =0 ; j < angle.size() ; j++ ) {
+       std::cout << angle[j] << "   " ;
+  }
+  std::cout << std::endl; 
+  float MedianTheta = 0;
+  std::sort( angle.begin(), angle.end() );
+  MedianTheta = CalcMedian(angle);
+  std::cout << "the Median Now:  " << MedianTheta << std::endl;  
+
   SV_alpha_Max = SV_alpha_Max / den;
-  //k
  
   data.fill<float>("alpha_loose", alpha_loose);
   data.fill<float>("alphaStar_loose", alphaStar_loose);
@@ -291,10 +358,13 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
   data.fill<float>("alpha_ratio_NoVert", alpha_ratio_NoVert); 
   
   data.fill<float>("JetDeltaR", JetDeltaR);
+  data.fill<float>("Jet2DIPSigMedian", Jet2DIPSigMedian);
+  data.fill<float>("Jet3DIPSigMedian", Jet3DIPSigMedian);
   data.fill<float>("Jet2DIPSig", Jet2DIPSig);
   data.fill<float>("Jet3DIPSig", Jet3DIPSig);
 
   data.fill<float>("SV_alpha_Max", SV_alpha_Max);
+  data.fill<float>("SV_ThetaMedian", MedianTheta);
 
   data.fill<int>("n_tracks", chargedPFCands.size());
   data.fill<float>("ntracks", chargedPFCands.size());

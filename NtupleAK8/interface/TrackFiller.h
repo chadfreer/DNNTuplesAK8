@@ -26,6 +26,7 @@ public:
   // read event content or event setup for each event
   virtual void readEvent(const edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
+  Measurement1D vertexDxy(const reco::VertexCompositePtrCandidate &svcand, const reco::Vertex &pv);
 protected:
   // declare the data branches (name, type, default values)
   virtual void book() override;
