@@ -274,17 +274,24 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
       const auto &trkinfo = trackInfoMap.at(cpf);
       JetDeltaR_num += trkinfo.getTrackDeltaR()  * cpf->pt();
       //2dIPSig
-      //if ( trkinfo.getTrackSip2dVal() / trkinfo.getTrackSip2dSig() != trkinfo.getTrackSip2dVal() / trkinfo.getTrackSip2dSig()) || trkinfo.getTrackSip2dVal() / trkinfo.getTrackSip2dSig() == abs(inf) ) continue;
-      if ( isnan(trkinfo.getTrackSip2dVal() / trkinfo.getTrackSip2dSig()) == 1 || isinf(trkinfo.getTrackSip2dVal() / trkinfo.getTrackSip2dSig()) == 1) continue; // {
+      if ( isnan(trkinfo.getTrackSip2dVal() / trkinfo.getTrackSip2dSig()) == 1 || isinf(trkinfo.getTrackSip2dVal() / trkinfo.getTrackSip2dSig()) == 1) continue; 
       IPSig2D_num += trkinfo.getTrackSip2dVal() / trkinfo.getTrackSip2dSig();
       IPSig2D_List.push_back(IPSig2D_num);
       //}
       //3DIPSig
-      if ( isnan(trkinfo.getTrackSip3dVal() / trkinfo.getTrackSip3dSig()) == 0 || isinf(trkinfo.getTrackSip3dVal() / trkinfo.getTrackSip3dSig()) == 0) {
+      //if ( isnan(trkinfo.getTrackSip3dVal() / trkinfo.getTrackSip3dSig()) == 0 || isinf(trkinfo.getTrackSip3dVal() / trkinfo.getTrackSip3dSig()) == 0) {
+      //IPSig3D_num += trkinfo.getTrackSip3dVal() / trkinfo.getTrackSip3dSig();
+      //IPSig3D_List.push_back(IPSig3D_num);
+      //}
+  }  
+  for (const auto *cpf : chargedPFCands){
+      if (cpf->pt() < 1) continue ;
+      const auto &trkinfo = trackInfoMap.at(cpf);
+      if ( isnan(trkinfo.getTrackSip3dVal() / trkinfo.getTrackSip3dSig()) == 1 || isinf(trkinfo.getTrackSip3dVal() / trkinfo.getTrackSip3dSig()) == 1) continue;
       IPSig3D_num += trkinfo.getTrackSip3dVal() / trkinfo.getTrackSip3dSig();
       IPSig3D_List.push_back(IPSig3D_num);
-      }
   }
+
   //Median Variables
   std::sort ( IPSig2D_List.begin(), IPSig2D_List.end() );
   std::sort ( IPSig3D_List.begin(), IPSig3D_List.end() );
