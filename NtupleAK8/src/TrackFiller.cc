@@ -58,6 +58,7 @@ void TrackFiller::book() {
 
   data.add<float>("SV_alpha_Max", -1);
   data.add<float>("SV_ThetaMedian", -1);
+  data.add<int>("Num_SVs", -1);
   //data.add<float>("alpha", -1);
   //data.add<float>("alphaMax", -1);
   //data.add<float>("alphaSV", -1);
@@ -293,6 +294,8 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
   float lenSq2 = 0;
   std::vector<float> angle;
 
+  int numSVs = 0;
+
   for (const auto &sv : *SVs){
       SV_alpha_num = 0;
       counting += 1;   
@@ -302,14 +305,17 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
           //std::cout << "Index:  " << Did << "   PT:   "  << PT <<  "X:   " << sv.position().x() << "   track X:    " << sv.daughter(Did)->vx() <<  "   Y:   " << sv.position().y() <<  "   track Y:    " << sv.daughter(Did)->vy() <<  "   Z:   "  << sv.position().z() << "   track Z:    " << sv.daughter(Did)->vz() <<  std::endl;
           double delr = reco::deltaR(sv.daughter(Did)->p4(), sv);
           if (PT < 1) continue;
-          if (delr > 0.8) continue;
-          SV_alpha_num += PT;
+          if (delr > 0.8) continue; // Should never happen but lets just make sure
+          //SV_alpha_num += PT;
          
-          //const auto &daughterinfo = trackInfoMap.at(sv);
-          //float delrjet = daughterinfo.getTrackDeltaR();
           float delrjet = reco::deltaR(jet, sv);
           if (delrjet > 0.8) continue;
-          //Theta Values now
+ 
+          numSVs++;
+
+          SV_alpha_num += PT;
+
+         //Theta Values now
           dot = ( ( sv.position().x() - lead_pv.x() ) * sv.daughter(Did)->p4().px() ) + ( ( sv.position().y() - lead_pv.y() ) * sv.daughter(Did)->p4().py() ) + ( ( sv.position().z() - lead_pv.z() ) * sv.daughter(Did)->p4().pz() ) ;
           lenSq1 = ( sv.position().x() - lead_pv.x() ) * ( sv.position().x() - lead_pv.x() ) + ( sv.position().y() - lead_pv.y() ) * ( sv.position().y() - lead_pv.y() ) + ( sv.position().z() - lead_pv.z() ) * ( sv.position().z() - lead_pv.z() ) ;  
           lenSq2 = sv.daughter(Did)->p4().px() * sv.daughter(Did)->p4().px() + sv.daughter(Did)->p4().py() * sv.daughter(Did)->p4().py() + sv.daughter(Did)->p4().pz() * sv.daughter(Did)->p4().pz() ;
@@ -354,6 +360,7 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
 
   data.fill<float>("SV_alpha_Max", SV_alpha_Max);
   data.fill<float>("SV_ThetaMedian", MedianTheta);
+  data.fill<int>("Num_SVs", numSVs);
 
   data.fill<int>("n_tracks", chargedPFCands.size());
   data.fill<float>("ntracks", chargedPFCands.size());
