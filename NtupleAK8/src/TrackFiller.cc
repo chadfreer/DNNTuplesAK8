@@ -59,7 +59,8 @@ void TrackFiller::book() {
   data.add<float>("SV_alpha_Max", -1);
   data.add<float>("SV_ThetaMedian", -1);
   data.add<int>("Num_SVs", -1);
-  //data.add<float>("alpha", -1);
+  data.add<int>("NumSV_daughters", -1); 
+ //data.add<float>("alpha", -1);
   //data.add<float>("alphaMax", -1);
   //data.add<float>("alphaSV", -1);
   //data.add<float>("alphaSVMax", -1);
@@ -295,10 +296,13 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
   std::vector<float> angle;
 
   int numSVs = 0;
+  int numSV_daughters = 0;
 
   for (const auto &sv : *SVs){
       SV_alpha_num = 0;
       counting += 1;   
+      float delrjet = reco::deltaR(jet, sv);
+      if (delrjet > 0.4) continue;
       size_t SV_Size = sv.numberOfDaughters();
       for (size_t Did = 0 ; Did < SV_Size ; Did++){
           float PT = sv.daughter(Did)->pt();
@@ -306,16 +310,12 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
           double delr = reco::deltaR(sv.daughter(Did)->p4(), sv);
           if (PT < 1) continue;
           if (delr > 0.4) continue; // Should never happen but lets just make sure
-          //SV_alpha_num += PT;
-         
-          float delrjet = reco::deltaR(jet, sv);
-          if (delrjet > 0.4) continue;
  
-          numSVs++;
+          numSV_daughters++;
 
           SV_alpha_num += PT;
 
-         //Theta Values now
+         //Theta Values now (finding the angle between the track pT and the vector made between the PV[0] and the current SV)
           dot = ( ( sv.position().x() - lead_pv.x() ) * sv.daughter(Did)->p4().px() ) + ( ( sv.position().y() - lead_pv.y() ) * sv.daughter(Did)->p4().py() ) + ( ( sv.position().z() - lead_pv.z() ) * sv.daughter(Did)->p4().pz() ) ;
           lenSq1 = ( sv.position().x() - lead_pv.x() ) * ( sv.position().x() - lead_pv.x() ) + ( sv.position().y() - lead_pv.y() ) * ( sv.position().y() - lead_pv.y() ) + ( sv.position().z() - lead_pv.z() ) * ( sv.position().z() - lead_pv.z() ) ;  
           lenSq2 = sv.daughter(Did)->p4().px() * sv.daughter(Did)->p4().px() + sv.daughter(Did)->p4().py() * sv.daughter(Did)->p4().py() + sv.daughter(Did)->p4().pz() * sv.daughter(Did)->p4().pz() ;
@@ -323,6 +323,7 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
           angle.push_back(Cosangle);
       }
       if (SV_alpha_num > SV_alpha_Max) SV_alpha_Max = SV_alpha_num;
+      numSVs++;
   }
 
   for  (unsigned int j =0 ; j < angle.size() ; j++ ) {
@@ -361,6 +362,7 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
   data.fill<float>("SV_alpha_Max", SV_alpha_Max);
   data.fill<float>("SV_ThetaMedian", MedianTheta);
   data.fill<int>("Num_SVs", numSVs);
+  data.fill<int>("NumSV_daughters", numSV_daughters);
 
   data.fill<int>("n_tracks", chargedPFCands.size());
   data.fill<float>("ntracks", chargedPFCands.size());
