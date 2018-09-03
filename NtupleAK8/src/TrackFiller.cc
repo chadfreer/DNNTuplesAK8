@@ -164,28 +164,6 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
   std::sort(chargedPFCands.begin(), chargedPFCands.end(), [&](const pat::PackedCandidate *p1, const pat::PackedCandidate *p2){
     return trackInfoMap.at(p1).getTrackSip2dSig() > trackInfoMap.at(p2).getTrackSip2dSig();
   });
-  
-  // calculating the alpha for pv and sv
-  //float sumJetPt  = 0;
-  //float alpha     = 0;
-  
-  //const auto &lead_pv = vertices->at(0);
-  ////bool in_lead_pv = false; 
-  //// const auto &lead_sv = SVs->at(0);
-  //// std::cout << " Jet Radius : " << jetR_ << std::endl;
-  //// these are the sums for this specific vertex
-  //for (const auto *tkr : chargedPFCands){
-  //  if((tkr->pt() < 1.0)) continue; //apply a cut on the track pt 
-  //  //float lead_pv_dz = std::abs(tkr->trackRef()->dz(lead_pv->position()));
-  //  int vtx_i = 0 ;
-  //  for (const auto &iv : *vertices){
-  //    if( iv.isFake() || iv.ndof() < 4 ) continue;
-  //    bool is_lead_pv  = (iv.position() - lead_pv.position()).r() < 0.02;
-  //    std::cout << " -- " << vtx_i << " : "<< is_lead_pv << " -- trak dz(pv)" << tkr->dz(iv.position()) << std::endl;
-  //    vtx_i ++ ;
-  //  }
- //}
-
    
   //***********************************START alpha variables for vertices***********************************
 
@@ -326,13 +304,17 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
           if (PT < 1) continue;
           if (delr > 0.8) continue;
           SV_alpha_num += PT;
-
-         //Theta Values now
-         dot = ( ( sv.position().x() - lead_pv.x() ) * sv.daughter(Did)->p4().px() ) + ( ( sv.position().y() - lead_pv.y() ) * sv.daughter(Did)->p4().py() ) + ( ( sv.position().z() - lead_pv.z() ) * sv.daughter(Did)->p4().pz() ) ;
-         lenSq1 = ( sv.position().x() - lead_pv.x() ) * ( sv.position().x() - lead_pv.x() ) + ( sv.position().y() - lead_pv.y() ) * ( sv.position().y() - lead_pv.y() ) + ( sv.position().z() - lead_pv.z() ) * ( sv.position().z() - lead_pv.z() ) ;  
-         lenSq2 = sv.daughter(Did)->p4().px() * sv.daughter(Did)->p4().px() + sv.daughter(Did)->p4().py() * sv.daughter(Did)->p4().py() + sv.daughter(Did)->p4().pz() * sv.daughter(Did)->p4().pz() ;
-         float Cosangle = acos(dot/sqrt(lenSq1*lenSq2)) ; 
-         angle.push_back(Cosangle);
+         
+          //const auto &daughterinfo = trackInfoMap.at(sv);
+          //float delrjet = daughterinfo.getTrackDeltaR();
+          float delrjet = reco::deltaR(jet, sv);
+          if (delrjet > 0.8) continue;
+          //Theta Values now
+          dot = ( ( sv.position().x() - lead_pv.x() ) * sv.daughter(Did)->p4().px() ) + ( ( sv.position().y() - lead_pv.y() ) * sv.daughter(Did)->p4().py() ) + ( ( sv.position().z() - lead_pv.z() ) * sv.daughter(Did)->p4().pz() ) ;
+          lenSq1 = ( sv.position().x() - lead_pv.x() ) * ( sv.position().x() - lead_pv.x() ) + ( sv.position().y() - lead_pv.y() ) * ( sv.position().y() - lead_pv.y() ) + ( sv.position().z() - lead_pv.z() ) * ( sv.position().z() - lead_pv.z() ) ;  
+          lenSq2 = sv.daughter(Did)->p4().px() * sv.daughter(Did)->p4().px() + sv.daughter(Did)->p4().py() * sv.daughter(Did)->p4().py() + sv.daughter(Did)->p4().pz() * sv.daughter(Did)->p4().pz() ;
+          float Cosangle = acos(dot/sqrt(lenSq1*lenSq2)) ; 
+          angle.push_back(Cosangle);
       }
       if (SV_alpha_num > SV_alpha_Max) SV_alpha_Max = SV_alpha_num;
   }
