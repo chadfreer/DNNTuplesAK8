@@ -305,11 +305,11 @@ bool TrackFiller::fill(const pat::Jet& jet, size_t jetidx, const JetHelper& jet_
           //std::cout << "Index:  " << Did << "   PT:   "  << PT <<  "X:   " << sv.position().x() << "   track X:    " << sv.daughter(Did)->vx() <<  "   Y:   " << sv.position().y() <<  "   track Y:    " << sv.daughter(Did)->vy() <<  "   Z:   "  << sv.position().z() << "   track Z:    " << sv.daughter(Did)->vz() <<  std::endl;
           double delr = reco::deltaR(sv.daughter(Did)->p4(), sv);
           if (PT < 1) continue;
-          if (delr > 0.8) continue; // Should never happen but lets just make sure
+          if (delr > 0.4) continue; // Should never happen but lets just make sure
           //SV_alpha_num += PT;
          
           float delrjet = reco::deltaR(jet, sv);
-          if (delrjet > 0.8) continue;
+          if (delrjet > 0.4) continue;
  
           numSVs++;
 
